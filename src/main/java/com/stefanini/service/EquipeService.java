@@ -17,16 +17,24 @@ public class EquipeService {
 	public boolean save(Equipe equipe) {
 		EntityManager manager = JPAUtil.getEntityManager();
 		manager.getTransaction().begin();
-		if (DateUtil.verificaDiaUtil(equipe.getRegistroValidadeInicio())) {
+		if (DateUtil.verificaDiaUtil(equipe.getRegistroValidadeInicio())&&DateUtil.verificaDiaUtil(equipe.getRegistroValidadeFim())) {
+			if(DateUtil.verificaDataValida(equipe.getRegistroValidadeInicio(), equipe.getRegistroValidadeFim())){
 			manager.persist(equipe);
 			manager.getTransaction().commit();
 			manager.close();
 			return true;
-		}
+			}else{
+				Mensagem.add("Data final do registro anterior a data inicial!");
+				manager.close();
+				return false;
+			}
+		}else{
 		Mensagem.add("Data informada não é um dia util!");
 		manager.close();
 		return false;
+		}
 	}
+			
 
 	public boolean update(Equipe equipe) {
 		EntityManager manager = JPAUtil.getEntityManager();
@@ -60,9 +68,7 @@ public class EquipeService {
 	@SuppressWarnings("unchecked")
 	public List<Equipe> listarAtivos() {
 		EntityManager manager = JPAUtil.getEntityManager();
-		Query q = manager.createNativeQuery(
-				"SELECT * FROM sgr_equipe WHERE REGISTRO_VALIDADE_FIM IS NULL OR REGISTRO_VALIDADE_FIM > CURRENT_DATE() ORDER BY REGISTRO_VALIDADE_INICIO ASC",
-				Equipe.class);
+		Query q = manager.createNamedQuery("Equipe.findAtivos");
 		List<Equipe> equipes = q.getResultList();
 		manager.close();
 		return equipes;
@@ -70,8 +76,8 @@ public class EquipeService {
 
 	public Equipe getEquipeById(Long id) {
 		EntityManager manager = JPAUtil.getEntityManager();
-		Query q = manager.createNativeQuery("SELECT * FROM sgr_equipe WHERE ID_EQUIPE = :idEquipe", Equipe.class);
-		q.setParameter("idEquipe", id);
+		Query q = manager.createNamedQuery("Equipe.findId");
+		q.setParameter("id", id);
 		Equipe equipe = (Equipe) q.getSingleResult();
 		manager.close();
 		return equipe;
@@ -79,12 +85,18 @@ public class EquipeService {
 
 	public void desativar(Long id) throws ConverterException {
 		EntityManager manager = JPAUtil.getEntityManager();
-
-		Equipe equipeMerge = getEquipeById(id);
-		manager.getTransaction().begin();
-		equipeMerge.setRegistroValidadeFim(new Date());
-		manager.merge(equipeMerge);
-		manager.getTransaction().commit();
-		manager.close();
+		Query q = manager.createNamedQuery("Profissional.findProfissionalByEquipe");
+		q.setParameter("id", id);
+		if(q.getResultList().isEmpty()){
+			Equipe equipeMerge = getEquipeById(id);
+			manager.getTransaction().begin();
+			equipeMerge.setRegistroValidadeFim(new Date());
+			manager.merge(equipeMerge);
+			manager.getTransaction().commit();
+			manager.close();
+		}else {
+			Mensagem.add("Existem profissionais ativos vinculados a esta Equipe, não pode ser excluída.");
+			manager.close();
+		}
 	}
 }

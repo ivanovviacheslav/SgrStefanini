@@ -17,11 +17,17 @@ public class FormaContratacaoService {
 	public boolean save(FormaContratacao formaContratacao) {
 		EntityManager manager = JPAUtil.getEntityManager();
 		manager.getTransaction().begin();
-		if (DateUtil.verificaDiaUtil(formaContratacao.getRegistroValidadeInicio())) {
+		if (DateUtil.verificaDiaUtil(formaContratacao.getRegistroValidadeInicio())&&DateUtil.verificaDiaUtil(formaContratacao.getRegistroValidadeFim())) {
+			if(DateUtil.verificaDataValida(formaContratacao.getRegistroValidadeInicio(), formaContratacao.getRegistroValidadeFim())){
 			manager.persist(formaContratacao);
 			manager.getTransaction().commit();
 			manager.close();
 			return true;
+		}else{
+			Mensagem.add("Data final do registro anterior a data inicial!");
+			manager.close();
+			return false;
+		}
 		} else {
 			Mensagem.add("Data informada não é um dia util!");
 			manager.close();
@@ -63,19 +69,15 @@ public class FormaContratacaoService {
 	@SuppressWarnings("unchecked")
 	public List<FormaContratacao> listarAtivos() {
 		EntityManager manager = JPAUtil.getEntityManager();
-		Query q = manager.createNativeQuery(
-				"SELECT * FROM sgr_forma_contratacao WHERE REGISTRO_VALIDADE_FIM IS NULL OR REGISTRO_VALIDADE_FIM > CURRENT_DATE() ORDER BY REGISTRO_VALIDADE_INICIO ASC",
-				FormaContratacao.class);
+		Query q = manager.createNamedQuery("FormaContratacao.findAtivos");
 		List<FormaContratacao> formaContratacoes = q.getResultList();
 		return formaContratacoes;
 	}
 
 	public FormaContratacao getFormaContratacaoById(Long id) {
 		EntityManager manager = JPAUtil.getEntityManager();
-		Query q = manager.createNativeQuery(
-				"SELECT * FROM sgr_forma_contratacao WHERE ID_FORMA_CONTRATACAO = :idFormaContratacao",
-				FormaContratacao.class);
-		q.setParameter("idFormaContratacao", id);
+		Query q = manager.createNamedQuery("FormaContratacao.findId");
+		q.setParameter("id", id);
 		FormaContratacao formaContratacao = (FormaContratacao) q.getSingleResult();
 		manager.close();
 		return formaContratacao;
@@ -83,11 +85,18 @@ public class FormaContratacaoService {
 
 	public void desativar(Long id) throws ConverterException {
 		EntityManager manager = JPAUtil.getEntityManager();
-		manager.getTransaction().begin();
-		FormaContratacao formaContratacao = (FormaContratacao) getFormaContratacaoById(id);
-		formaContratacao.setRegistroValidadeFim(new Date());
-		manager.merge(formaContratacao);
-		manager.getTransaction().commit();
-		manager.close();
+		Query q = manager.createNamedQuery("Profissional.findProfissionalByFormaContratacao");
+		q.setParameter("id", id);
+		if(q.getResultList().isEmpty()){
+			manager.getTransaction().begin();
+			FormaContratacao formaContratacao = (FormaContratacao) getFormaContratacaoById(id);
+			formaContratacao.setRegistroValidadeFim(new Date());
+			manager.merge(formaContratacao);
+			manager.getTransaction().commit();
+			manager.close();
+		}else {
+			Mensagem.add("Existem profissionais ativos vinculados a esta Forma de Contratação, não pode ser excluída.");
+			manager.close();
+		}
 	}
 }

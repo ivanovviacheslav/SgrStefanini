@@ -16,11 +16,17 @@ public class CelulaService {
 	public boolean save(Celula celula) {
 		EntityManager manager = JPAUtil.getEntityManager();
 		manager.getTransaction().begin();
-		if (DateUtil.verificaDiaUtil(celula.getRegistroValidadeInicio())) {
+		if (DateUtil.verificaDiaUtil(celula.getRegistroValidadeInicio())&&DateUtil.verificaDiaUtil(celula.getRegistroValidadeFim())) {
+			if(DateUtil.verificaDataValida(celula.getRegistroValidadeInicio(), celula.getRegistroValidadeFim())){
 			manager.persist(celula);
 			manager.getTransaction().commit();
 			manager.close();
 			return true;
+			}else{
+				Mensagem.add("Data final do registro anterior a data inicial!");
+				manager.close();
+				return false;
+			}
 		} else {
 			Mensagem.add("Data informada não é um dia util!");
 			manager.close();
@@ -62,9 +68,7 @@ public class CelulaService {
 	@SuppressWarnings("unchecked")
 	public List<Celula> listarAtivo() {
 		EntityManager manager = JPAUtil.getEntityManager();
-		Query q = manager.createNativeQuery(
-				"SELECT * FROM sgr_celula WHERE REGISTRO_VALIDADE_FIM IS NULL OR REGISTRO_VALIDADE_FIM > CURRENT_DATE() ORDER BY REGISTRO_VALIDADE_INICIO ASC",
-				Celula.class);
+		Query q = manager.createNamedQuery("Celula.findAtivos");
 		List<Celula> celulas = q.getResultList();
 		manager.close();
 		return celulas;
@@ -72,8 +76,8 @@ public class CelulaService {
 
 	public Celula getCelulaById(Long id) {
 		EntityManager manager = JPAUtil.getEntityManager();
-		Query q = manager.createNativeQuery("SELECT * FROM sgr_celula WHERE ID_CELULA = :idCelula", Celula.class);
-		q.setParameter("idCelula", id);
+		Query q = manager.createNamedQuery("Celula.findId");
+		q.setParameter("id", id);
 		Celula celula = (Celula) q.getSingleResult();
 		manager.close();
 		return celula;
@@ -81,11 +85,18 @@ public class CelulaService {
 
 	public void desativar(Long id) {
 		EntityManager manager = JPAUtil.getEntityManager();
-		manager.getTransaction().begin();
-		Celula celulaMerge = getCelulaById(id);
-		celulaMerge.setRegistroValidadeFim(new Date());
-		manager.merge(celulaMerge);
-		manager.getTransaction().commit();
-		manager.close();
+		Query q = manager.createNamedQuery("Profissional.findProfissionalByCelula");
+		q.setParameter("id", id);
+		if(q.getResultList().isEmpty()){
+			Celula celulaMerge = getCelulaById(id);
+			celulaMerge.setRegistroValidadeFim(new Date());
+			manager.getTransaction().begin();
+			manager.merge(celulaMerge);
+			manager.getTransaction().commit();
+			manager.close();
+		}else {
+			Mensagem.add("Existem profissionais ativos vinculados a este Cargo, não pode ser excluída.");
+			manager.close();
+		}
 	}
 }

@@ -126,18 +126,20 @@ public class DateUtil {
 	public static boolean verificaDiaUtil(Date data) {
 		GregorianCalendar calendar = new GregorianCalendar();
 
+		if(data!=null){
 		calendar.setTime(data);
-
 		if (calendar.get(GregorianCalendar.DAY_OF_WEEK) == 1 || calendar.get(GregorianCalendar.DAY_OF_WEEK) == 7) {
 			return false;
 		} else {
 			return true;
-
+		}
+		}else{
+			return true;
 		}
 	}
 
 	public static boolean verificaDataValida(Date data, Date novaData) {
-		if (novaData != null) {
+		if (novaData != null && data != null) {
 			if (data.before(novaData) || data.compareTo(novaData) == 0) {
 				return true;
 			} else {
@@ -147,6 +149,42 @@ public class DateUtil {
 			return true;
 		}
 	}
+	public static Date retornaDataFimAposInicio(Date data){
+		GregorianCalendar calendar = new GregorianCalendar();
+
+		calendar.setTime(data);
+		if (calendar.get(GregorianCalendar.DAY_OF_WEEK) == 6) {
+			calendar.add(GregorianCalendar.DAY_OF_MONTH, 3);
+		} else if (calendar.get(GregorianCalendar.DAY_OF_WEEK) == 7) {
+			calendar.add(GregorianCalendar.DAY_OF_MONTH, 2);
+		} else {
+			calendar.add(GregorianCalendar.DAY_OF_MONTH, 1);
+		}
+		data = calendar.getTime();
+		return data;
+	}
+	public static Date retornaDataFimAntesDoNovoInicio(Date data){
+		GregorianCalendar calendar = new GregorianCalendar();
+
+		calendar.setTime(data);
+		if (calendar.get(GregorianCalendar.DAY_OF_WEEK) == 2) {
+			calendar.add(GregorianCalendar.DAY_OF_MONTH, -3);
+		} else {
+			calendar.add(GregorianCalendar.DAY_OF_MONTH, -1);
+		}
+		data = calendar.getTime();
+		return data;
+	}
+	
+	 public static Date getDataParaComparacao (Date aDate){       
+	        Calendar myCalendar = Calendar.getInstance();
+	        myCalendar.setTime(aDate);
+	        myCalendar.set(Calendar.HOUR_OF_DAY, 0);
+	        myCalendar.set(Calendar.MINUTE, 0);
+	        myCalendar.set(Calendar.SECOND, 0);
+	        myCalendar.set(Calendar.MILLISECOND, 0);
+	        return myCalendar.getTime();
+	    }
 	// public static Date DataDoSistemaMySql(){
 	// SimpleDateFormat format = new SimpleDateFormat("yyyy-mm-dd");
 	// Date dataAtual = new Date();

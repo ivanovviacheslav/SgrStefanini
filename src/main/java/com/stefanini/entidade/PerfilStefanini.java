@@ -8,6 +8,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
@@ -15,6 +17,12 @@ import com.stefanini.util.DateUtil;
 
 @Entity
 @Table(name = "SGR_PERFIL_STEFANINI")
+@NamedQueries({
+	@NamedQuery(name = "PerfilStefanini.findAll", query = "SELECT p FROM PerfilStefanini p ORDER BY p.nome ASC"),
+	@NamedQuery(name = "PerfilStefanini.findAtivos", query = "SELECT p FROM PerfilStefanini p WHERE p.registroValidadeFim IS NULL OR p.registroValidadeFim > CURRENT_DATE AND p.registroValidadeInicio <= CURRENT_DATE ORDER BY p.nome ASC"),
+	@NamedQuery(name = "PerfilStefanini.findNome", query = "SELECT p FROM PerfilStefanini p WHERE p.nome = :nome AND p.registroValidadeFim IS NULL OR p.registroValidadeFim > CURRENT_DATE AND p.registroValidadeInicio <= CURRENT_DATE ORDER BY p.nome ASC"),
+	@NamedQuery(name = "PerfilStefanini.findId", query = "SELECT p FROM PerfilStefanini p WHERE p.id = :id AND p.registroValidadeFim IS NULL OR p.registroValidadeFim > CURRENT_DATE AND p.registroValidadeInicio <= CURRENT_DATE ORDER BY p.nome ASC")
+})
 public class PerfilStefanini implements Serializable{
 
 	private static final long serialVersionUID = 1L;
@@ -25,10 +33,10 @@ public class PerfilStefanini implements Serializable{
 	private Long id;
 
 	@Column(name = "VALOR_INICIAL", nullable = false)
-	private double valorInicial;
+	private Double valorInicial;
 
 	@Column(name = "VALOR_FINAL", nullable = false)
-	private double valorFinal;
+	private Double valorFinal;
 
 	@Column(name = "NOME", nullable = false)
 	private String nome;
@@ -55,19 +63,19 @@ public class PerfilStefanini implements Serializable{
 		this.id = id;
 	}
 
-	public double getValorInicial() {
+	public Double getValorInicial() {
 		return valorInicial;
 	}
 
-	public void setValorInicial(double valorInicial) {
+	public void setValorInicial(Double valorInicial) {
 		this.valorInicial = valorInicial;
 	}
 
-	public double getValorFinal() {
+	public Double getValorFinal() {
 		return valorFinal;
 	}
 
-	public void setValorFinal(double valorFinal) {
+	public void setValorFinal(Double valorFinal) {
 		this.valorFinal = valorFinal;
 	}
 

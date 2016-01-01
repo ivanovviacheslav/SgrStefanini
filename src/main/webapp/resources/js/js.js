@@ -17,12 +17,12 @@ function teste(obj){
 }
 
 function limpaDoubleVazio(obj){
-	if(obj.value == '0') obj.value = '';
+	if(obj.value == '0,00') obj.value = '';
 	
 }
 
 function retornaPadrao(obj){
-	if(obj.value == '') obj.value = '0';
+	if(obj.value == '') obj.value = '0,00';
 }
 
 function moeda(v) {
@@ -38,4 +38,12 @@ function moeda(v) {
 	v = v.replace(/(\d{1})(\d{1,2})$/, "$1,$2") // coloca virgula antes dos
 												// ultimos 4 digitos
 	return v;
+}
+
+function mostraData(obj){
+	if(obj.value == "Ativo"){
+		$("#dataAfastado").hide();
+	}else{
+		$("#dataAfastado").show();
+	}
 }

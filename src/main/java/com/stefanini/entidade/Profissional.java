@@ -10,6 +10,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
@@ -17,10 +19,29 @@ import com.stefanini.util.DateUtil;
 
 @Entity
 @Table(name = "SGR_PROFISSIONAL")
+@NamedQueries({
+	@NamedQuery(name = "Profissional.findAll", query ="SELECT p FROM Profissional p ORDER BY p.nome ASC"),
+	@NamedQuery(name = "Profissional.findMatriculaParaHistorico", query ="SELECT p FROM Profissional p WHERE p.matricula = :matricula"),
+	@NamedQuery(name = "Profissional.findAtivos", query ="SELECT p FROM Profissional p WHERE p.registroValidadeInicio <= CURRENT_DATE AND p.registroValidaeFim IS NULL OR P.registroValidaeFim > CURRENT_DATE ORDER BY p.nome ASC"),
+	@NamedQuery(name = "Profissional.findNome", query ="SELECT p FROM Profissional p WHERE p.nome LIKE :nome AND (p.registroValidadeInicio <= CURRENT_DATE) AND (p.registroValidaeFim IS NULL OR P.registroValidaeFim > CURRENT_DATE) ORDER BY p.nome ASC"),
+	@NamedQuery(name = "Profissional.findId", query ="SELECT p FROM Profissional p WHERE p.id = :id AND (p.registroValidadeInicio <= CURRENT_DATE) AND (p.registroValidaeFim IS NULL OR P.registroValidaeFim > CURRENT_DATE) ORDER BY p.nome ASC"),
+	@NamedQuery(name = "Profissional.findMatricula", query ="SELECT p FROM Profissional p WHERE p.matricula = :matricula AND (p.registroValidadeInicio <= CURRENT_DATE) AND (p.registroValidaeFim IS NULL OR P.registroValidaeFim > CURRENT_DATE) ORDER BY p.nome ASC"),
+	@NamedQuery(name = "Profissional.findProfissionalByCargaHoraria", query ="SELECT p FROM Profissional p WHERE p.cargaHoraria.id = :id AND (p.registroValidadeInicio <= CURRENT_DATE) AND (p.registroValidaeFim IS NULL OR P.registroValidaeFim > CURRENT_DATE) ORDER BY p.nome ASC"),	
+	@NamedQuery(name = "Profissional.findProfissionalByCargo", query ="SELECT p FROM Profissional p WHERE p.cargo.id = :id AND (p.registroValidadeInicio <= CURRENT_DATE) AND (p.registroValidaeFim IS NULL OR P.registroValidaeFim > CURRENT_DATE) ORDER BY p.nome ASC"),	
+	@NamedQuery(name = "Profissional.findProfissionalByCelula", query ="SELECT p FROM Profissional p WHERE p.celula.id = :id AND (p.registroValidadeInicio <= CURRENT_DATE) AND (p.registroValidaeFim IS NULL OR P.registroValidaeFim > CURRENT_DATE) ORDER BY p.nome ASC"),	
+	@NamedQuery(name = "Profissional.findProfissionalByEquipe", query ="SELECT p FROM Profissional p WHERE p.equipe.id = :id AND (p.registroValidadeInicio <= CURRENT_DATE) AND (p.registroValidaeFim IS NULL OR P.registroValidaeFim > CURRENT_DATE) ORDER BY p.nome ASC"),	
+	@NamedQuery(name = "Profissional.findProfissionalByEquipeNome", query ="SELECT p FROM Profissional p WHERE p.equipe.nome = :nome AND p.registroValidadeInicio <= CURRENT_DATE AND (p.registroValidaeFim IS NULL OR P.registroValidaeFim > CURRENT_DATE) ORDER BY p.nome ASC"),	
+	@NamedQuery(name = "Profissional.findProfissionalByFormaContratacao", query ="SELECT p FROM Profissional p WHERE p.formaContratacao.id = :id AND (p.registroValidadeInicio <= CURRENT_DATE) AND (p.registroValidaeFim IS NULL OR P.registroValidaeFim > CURRENT_DATE) ORDER BY p.nome ASC"),	
+	@NamedQuery(name = "Profissional.findProfissionalByPerfil", query = "SELECT p FROM Profissional p WHERE p.perfil.id = :id AND  (p.registroValidadeInicio <= CURRENT_DATE) AND (p.registroValidaeFim IS NULL OR P.registroValidaeFim > CURRENT_DATE) ORDER BY p.nome ASC"),	
+	@NamedQuery(name = "Profissional.findProfissionalByStatus", query ="SELECT p FROM Profissional p WHERE p.status.id = :id AND (p.registroValidadeInicio <= CURRENT_DATE) AND (p.registroValidaeFim IS NULL OR P.registroValidaeFim > CURRENT_DATE) ORDER BY p.nome ASC"),	
+	@NamedQuery(name = "Profissional.checkMatriculaParaEdicao", query ="SELECT p FROM Profissional p WHERE p.id = (SELECT MAX(pr.id)FROM Profissional pr WHERE pr.matricula = :matricula)")
+
+})
 public class Profissional implements BaseEntity, Serializable {
 	private static final long serialVersionUID = 1L;
 	public Profissional() {
 		this.dataAdmissao = DateUtil.getProximoDiaUtil();
+		this.registroValidadeInicio = DateUtil.getProximoDiaUtil();
 		this.dataManipulacao = DateUtil.getProximoDiaUtil();
 	}
 	
@@ -39,13 +60,13 @@ public class Profissional implements BaseEntity, Serializable {
 	private int matricula;
 	
 	@Column(name = "SALARIO", nullable = false)
-	private double salario;
+	private Double salario = null;
 	
 	@Column(name="BENEFICIOS", nullable = true)
-	private double beneficios;
+	private Double beneficios;
 	
 	@Column(name = "VALOR_HORA", nullable = false)
-	private double valorHora;
+	private Double valorHora;
 	
 	@Column(name = "DATA_ADMISSAO", nullable = false)
 	private Date dataAdmissao;
@@ -86,7 +107,12 @@ public class Profissional implements BaseEntity, Serializable {
 	@JoinColumn(name = "ID_STATUS", referencedColumnName = "ID_STATUS")
 	@ManyToOne
 	private Status status;
-
+	
+	@Column(name = "DATA_SAIDA", nullable=true)
+	private Date dataSaida;
+	
+	@Column(name = "DATA_RETORNO", nullable=true)
+	private Date dataRetorno;
 	
 	public Long getId() {
 		return id;
@@ -113,27 +139,27 @@ public class Profissional implements BaseEntity, Serializable {
 		this.nome = nome;
 	}
 
-	public double getSalario() {
+	public Double getSalario() {
 		return salario;
 	}
 
-	public void setSalario(double salario) {
+	public void setSalario(Double salario) {
 		this.salario = salario;
 	}
 
-	public double getBeneficios() {
+	public Double getBeneficios() {
 		return beneficios;
 	}
 
-	public void setBeneficios(double beneficios) {
+	public void setBeneficios(Double beneficios) {
 		this.beneficios = beneficios;
 	}
 
-	public double getValorHora() {
+	public Double getValorHora() {
 		return valorHora;
 	}
 
-	public void setValorHora(double valorHora) {
+	public void setValorHora(Double valorHora) {
 		this.valorHora = valorHora;
 	}
 
@@ -233,18 +259,34 @@ public class Profissional implements BaseEntity, Serializable {
 		this.dataManipulacao = dataManipulacao;
 	}
 
+	public Date getDataSaida() {
+		return dataSaida;
+	}
+
+	public void setDataSaida(Date dataSaida) {
+		this.dataSaida = dataSaida;
+	}
+
+	public Date getDataRetorno() {
+		return dataRetorno;
+	}
+
+	public void setDataRetorno(Date dataRetorno) {
+		this.dataRetorno = dataRetorno;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		long temp;
-		temp = Double.doubleToLongBits(beneficios);
-		result = prime * result + (int) (temp ^ (temp >>> 32));
+		result = prime * result + ((beneficios == null) ? 0 : beneficios.hashCode());
 		result = prime * result + ((cargaHoraria == null) ? 0 : cargaHoraria.hashCode());
 		result = prime * result + ((cargo == null) ? 0 : cargo.hashCode());
 		result = prime * result + ((celula == null) ? 0 : celula.hashCode());
 		result = prime * result + ((dataAdmissao == null) ? 0 : dataAdmissao.hashCode());
 		result = prime * result + ((dataDemissao == null) ? 0 : dataDemissao.hashCode());
+		result = prime * result + ((dataRetorno == null) ? 0 : dataRetorno.hashCode());
+		result = prime * result + ((dataSaida == null) ? 0 : dataSaida.hashCode());
 		result = prime * result + ((equipe == null) ? 0 : equipe.hashCode());
 		result = prime * result + ((formaContratacao == null) ? 0 : formaContratacao.hashCode());
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
@@ -253,11 +295,9 @@ public class Profissional implements BaseEntity, Serializable {
 		result = prime * result + ((perfil == null) ? 0 : perfil.hashCode());
 		result = prime * result + ((registroValidadeInicio == null) ? 0 : registroValidadeInicio.hashCode());
 		result = prime * result + ((registroValidaeFim == null) ? 0 : registroValidaeFim.hashCode());
-		temp = Double.doubleToLongBits(salario);
-		result = prime * result + (int) (temp ^ (temp >>> 32));
+		result = prime * result + ((salario == null) ? 0 : salario.hashCode());
 		result = prime * result + ((status == null) ? 0 : status.hashCode());
-		temp = Double.doubleToLongBits(valorHora);
-		result = prime * result + (int) (temp ^ (temp >>> 32));
+		result = prime * result + ((valorHora == null) ? 0 : valorHora.hashCode());
 		return result;
 	}
 
@@ -270,7 +310,10 @@ public class Profissional implements BaseEntity, Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		Profissional other = (Profissional) obj;
-		if (Double.doubleToLongBits(beneficios) != Double.doubleToLongBits(other.beneficios))
+		if (beneficios == null) {
+			if (other.beneficios != null)
+				return false;
+		} else if (!beneficios.equals(other.beneficios))
 			return false;
 		if (cargaHoraria == null) {
 			if (other.cargaHoraria != null)
@@ -296,6 +339,16 @@ public class Profissional implements BaseEntity, Serializable {
 			if (other.dataDemissao != null)
 				return false;
 		} else if (!dataDemissao.equals(other.dataDemissao))
+			return false;
+		if (dataRetorno == null) {
+			if (other.dataRetorno != null)
+				return false;
+		} else if (!dataRetorno.equals(other.dataRetorno))
+			return false;
+		if (dataSaida == null) {
+			if (other.dataSaida != null)
+				return false;
+		} else if (!dataSaida.equals(other.dataSaida))
 			return false;
 		if (equipe == null) {
 			if (other.equipe != null)
@@ -334,18 +387,25 @@ public class Profissional implements BaseEntity, Serializable {
 				return false;
 		} else if (!registroValidaeFim.equals(other.registroValidaeFim))
 			return false;
-		if (Double.doubleToLongBits(salario) != Double.doubleToLongBits(other.salario))
+		if (salario == null) {
+			if (other.salario != null)
+				return false;
+		} else if (!salario.equals(other.salario))
 			return false;
 		if (status == null) {
 			if (other.status != null)
 				return false;
 		} else if (!status.equals(other.status))
 			return false;
-		if (Double.doubleToLongBits(valorHora) != Double.doubleToLongBits(other.valorHora))
+		if (valorHora == null) {
+			if (other.valorHora != null)
+				return false;
+		} else if (!valorHora.equals(other.valorHora))
 			return false;
 		return true;
 	}
 
+	
 	
 	
 }

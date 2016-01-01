@@ -17,11 +17,17 @@ public class StatusService {
 	public boolean save(Status status) {
 		EntityManager manager = JPAUtil.getEntityManager();
 		manager.getTransaction().begin();
-		if (DateUtil.verificaDiaUtil(status.getRegistroValidadeInicio())) {
+		if (DateUtil.verificaDiaUtil(status.getRegistroValidadeInicio())&&DateUtil.verificaDiaUtil(status.getRegistroValidadeFim())) {
+			if(DateUtil.verificaDataValida(status.getRegistroValidadeInicio(), status.getRegistroValidadeFim())){
 			manager.persist(status);
 			manager.getTransaction().commit();
 			manager.close();
 			return true;
+			}else{
+				Mensagem.add("Data final do registro anterior a data inicial!");
+				manager.close();
+				return false;
+			}
 		} else {
 			Mensagem.add("Data informada não é um dia util!");
 			manager.close();
@@ -62,17 +68,15 @@ public class StatusService {
 	@SuppressWarnings("unchecked")
 	public List<Status> listarAtivos() {
 		EntityManager manager = JPAUtil.getEntityManager();
-		Query q = manager.createNativeQuery(
-				"SELECT * FROM sgr_status WHERE REGISTRO_VALIDADE_FIM IS NULL OR REGISTRO_VALIDADE_FIM > CURRENT_DATE() ORDER BY REGISTRO_VALIDADE_INICIO ASC",
-				Status.class);
+		Query q = manager.createNamedQuery("Status.findAtivos");
 		List<Status> listStatus = q.getResultList();
 		return listStatus;
 	}
 
 	public Status getStatusById(Long id) {
 		EntityManager manager = JPAUtil.getEntityManager();
-		Query q = manager.createNativeQuery("SELECT * FROM sgr_status WHERE ID_STATUS = :idStatus", Status.class);
-		q.setParameter("idStatus", id);
+		Query q = manager.createNamedQuery("Status.findId");
+		q.setParameter("id", id);
 		Status status = (Status) q.getSingleResult();
 		manager.close();
 		return status;
@@ -80,11 +84,20 @@ public class StatusService {
 
 	public void desativar(Long id) throws ConverterException {
 		EntityManager manager = JPAUtil.getEntityManager();
-		manager.getTransaction().begin();
-		Status statusMerge = (Status) getStatusById(id);
-		statusMerge.setRegistroValidadeFim(new Date());
-		manager.merge(statusMerge);
-		manager.getTransaction().commit();
-		manager.close();
+		Query q = manager.createNamedQuery("Profissional.findProfissionalByStatus");
+		q.setParameter("id", id);
+		if(q.getResultList().isEmpty()){
+			manager.getTransaction().begin();
+			Status statusMerge = (Status) getStatusById(id);
+			statusMerge.setRegistroValidadeFim(new Date());
+			manager.merge(statusMerge);
+			manager.getTransaction().commit();
+			manager.close();
+		}else {
+			Mensagem.add("Existem profissionais ativos vinculados a este Status, não pode ser excluída.");
+			manager.close();
+		}
+		
+		
 	}
 }

@@ -4,95 +4,47 @@ import java.util.List;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
-import javax.persistence.TypedQuery;
 
+import com.stefanini.entidade.Profissional;
 import com.stefanini.entidade.Relatorio;
 import com.stefanini.util.JPAUtil;
 
 public class RelatorioService {
 	
-//	    private BarChartModel profissionalPorEquipe;
-//	    
-//	    public void criaGrafico(){
-//	    	createBarModel();
-//	    }
-//	    
-//	    public BarChartModel getProfissionalPorEquipe() {
-//	        return profissionalPorEquipe;
-//	    }
-//	 
-//	    private BarChartModel initBarModel() {
-//	        BarChartModel model = new BarChartModel();
-//	 
-//	        ChartSeries grafico = new ChartSeries();
-//	        for (Relatorio relatorio : profissionaisPorEquipe()) {
-//				grafico.set(relatorio.getNome(), relatorio.getQuantidade());
-//			}	 
-//	        model.addSeries(grafico);
-//	         
-//	        return model;
-//	    }
-//	     
-//	    private void createBarModel() {
-//	        profissionalPorEquipe = initBarModel();
-//	         
-//	        profissionalPorEquipe.setTitle("Profissionais por equipe");
-//	        profissionalPorEquipe.setLegendPosition("ne");
-//	         
-//	        Axis xAxis = profissionalPorEquipe.getAxis(AxisType.X);
-//	        xAxis.setLabel("Equipes");
-//	         
-//	        Axis yAxis = profissionalPorEquipe.getAxis(AxisType.Y);
-//	        yAxis.setLabel("N° Profissionais");
-//	        yAxis.setMin(0);
-//	        yAxis.setMax(50);
-//	    }
-	
-//	@SuppressWarnings("unchecked")
-//	public List<Relatorio> profissionaisPorEquipe(){
-//		EntityManager manager = JPAUtil.getEntityManager();
-//		Query q = manager.createNativeQuery(
-//				"SELECT COUNT(PROF.ID_EQUIPE), EQUI.NOME "
-//				+ "FROM  SGR_PROFISSIONAL PROF "
-//				+ "LEFT JOIN SGR_EQUIPE EQUI "
-//				+ "ON PROF.ID_EQUIPE = EQUI.ID_EQUIPE "
-//				+ "GROUP BY PROF.ID_EQUIPE", Relatorio.class);
-//		
-//		List<Relatorio> relatorioProfissionalPorEquipe =  q.getResultList();
-//		return relatorioProfissionalPorEquipe;		
-//	}
-	
 	@SuppressWarnings("unchecked")
-	public List<Relatorio> profissionaisPorEquipe(){
-		System.out.println("###################ANTES DA QUERY");		
-		EntityManager manager = JPAUtil.getEntityManager();
-		
-		String profisionalPorEquipe = "SELECT new com.stefanini.entidade.Relatorio(p.equipe.nome, COUNT(p)) FROM Profissional p "
-									+ "GROUP BY p.equipe.nome";
-		
-		Query q = manager.createQuery(profisionalPorEquipe);	
-//		TypedQuery<Relatorio> q = manager.createQuery(profisionalPorEquipe, Relatorio.class);
-		System.out.println("###################DEPOIS DA QUERY");
-		
+	public List<Relatorio> profissionaisPorEquipe(){		
+		EntityManager manager = JPAUtil.getEntityManager();		
+		String profisionalPorEquipe = "SELECT new com.stefanini.entidade.Relatorio(p.equipe.nome, COUNT(p)) FROM Profissional p WHERE p.registroValidadeInicio <= CURRENT_DATE AND p.registroValidaeFim IS NULL OR P.registroValidaeFim > CURRENT_DATE GROUP BY p.equipe.nome";
+		Query q = manager.createQuery(profisionalPorEquipe);
+//		Query q = manager.createNamedQuery("Relatorio.profissionalPorEquipe");
 		List<Relatorio> relatorioProfissionalPorEquipe = (List<Relatorio>)q.getResultList();
-		System.out.println("#######################" + relatorioProfissionalPorEquipe.size());
+		manager.close();
 		return relatorioProfissionalPorEquipe;		
 	}
 	
 	@SuppressWarnings("unchecked")
-	public List<Relatorio> profissionaisPorEquipeView(){
-		System.out.println("###################ANTES DA QUERY");		
+	public List<Relatorio> contratacaoPorEquipe(){
 		EntityManager manager = JPAUtil.getEntityManager();
-		
-		String profisionalPorEquipe = "SELECT new com.stefanini.entidade.Relatorio(v.equipe, v.qtd ) FROM sgr_view_profissional_equipe v";
-		
-		Query q = manager.createQuery(profisionalPorEquipe);	
-//		TypedQuery<Relatorio> q = manager.createQuery(profisionalPorEquipe, Relatorio.class);
-		System.out.println("###################DEPOIS DA QUERY");
-		
-		List<Relatorio> relatorioProfissionalPorEquipe = (List<Relatorio>)q.getResultList();
-		System.out.println("#######################" + relatorioProfissionalPorEquipe.size());
-		return relatorioProfissionalPorEquipe;		
+		String contratacaoPorEquipe = "SELECT new com.stefanini.entidade.Relatorio(p.equipe.nome,(SELECT COUNT(pp.formaContratacao.nome) FROM Profissional pp WHERE pp.formaContratacao.nome = :clt), (SELECT COUNT(p.formaContratacao.nome) FROM Profissional p WHERE p.formaContratacao.nome = :estagio)) FROM Profissional p "
+				+ "WHERE "
+			//	+ " p.formaContratacao = :clt AND p.formaContratacao = :estagio "
+				+ "p.registroValidadeInicio <= CURRENT_DATE AND p.registroValidaeFim IS NULL OR p.registroValidaeFim > CURRENT_DATE "
+				+ "GROUP BY p.equipe.nome";
+		Query q = manager.createQuery(contratacaoPorEquipe);
+		q.setParameter("clt", "CLT");
+		q.setParameter("estagio", "Estágio");
+		List<Relatorio> relatorioContratacaoPorEquipe = (List<Relatorio>)q.getResultList();
+		manager.close();
+		return relatorioContratacaoPorEquipe;
 	}
-
+	
+	@SuppressWarnings("unchecked")
+	public List<Profissional> listaDeProfissionaisPorEquipe(String nome){
+		EntityManager manager = JPAUtil.getEntityManager();
+		Query q = manager.createNamedQuery("Profissional.findProfissionalByEquipeNome");
+		q.setParameter("nome", nome);
+		List<Profissional> profissionais = q.getResultList();
+		manager.close();
+		return profissionais;
+	}
 }

@@ -17,15 +17,22 @@ public class CargoService {
 	public boolean save(Cargo cargo) {
 		EntityManager manager = JPAUtil.getEntityManager();
 		manager.getTransaction().begin();
-		if (DateUtil.verificaDiaUtil(cargo.getRegistroValidadeInicio())) {
+		if (DateUtil.verificaDiaUtil(cargo.getRegistroValidadeInicio())&&DateUtil.verificaDiaUtil(cargo.getRegistroValidadeFim())) {
+			if(DateUtil.verificaDataValida(cargo.getRegistroValidadeInicio(), cargo.getRegistroValidadeFim())){
 			manager.persist(cargo);
 			manager.getTransaction().commit();
 			manager.close();
 			return true;
+		}else{
+			Mensagem.add("Data final do registro anterior a data inicial!");
+			manager.close();
+			return false;
 		}
+		}else{
 		Mensagem.add("Data informada não é um dia util!");
 		manager.close();
 		return false;
+		}
 	}
 
 	public boolean update(Cargo cargo) {
@@ -63,6 +70,7 @@ public class CargoService {
 		EntityManager manager = JPAUtil.getEntityManager();
 		Query q = manager.createNamedQuery("Cargo.findAtivos");
 		List<Cargo> cargos = q.getResultList();
+		manager.close();
 		return cargos;
 	}
 
@@ -77,11 +85,18 @@ public class CargoService {
 
 	public void desativar(Long id) throws ConverterException {
 		EntityManager manager = JPAUtil.getEntityManager();
-		manager.getTransaction().begin();
-		Cargo cargoMerge = (Cargo) getCargoById(id);
-		cargoMerge.setRegistroValidadeFim(new Date());
-		manager.merge(cargoMerge);
-		manager.getTransaction().commit();
-		manager.close();
+		Query q = manager.createNamedQuery("Profissional.findProfissionalByCargo");
+		q.setParameter("id", id);
+		if(q.getResultList().isEmpty()){
+			Cargo cargoMerge = (Cargo) getCargoById(id);
+			cargoMerge.setRegistroValidadeFim(new Date());
+			manager.getTransaction().begin();
+			manager.merge(cargoMerge);
+			manager.getTransaction().commit();
+			manager.close();
+		}else {
+			Mensagem.add("Existem profissionais ativos vinculados a este Cargo, não pode ser excluída.");
+			manager.close();
+		}
 	}
 }
